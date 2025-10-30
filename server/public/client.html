@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics and Reporting</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7f9fc;
+      margin: 0;
+      padding: 0;
+    }
+
+    .analytics-report {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .dashboard-overview {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      flex: 1;
+      padding: 20px;
+      background-color: #f0f2f5;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card h3 {
+      margin: 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .stat-card p {
+      font-size: 24px;
+      color: #007bff;
+    }
+
+    .charts-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .chart-card {
+      flex: 1 1 45%;
+      background-color: #ffffff;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-card h4 {
+      margin-bottom: 15px;
+      font-size: 20px;
+      color: #333;
+    }
+
+    .chart-container {
+      width: 100%;
+      height: 300px;
+    }
+
+    .report-generation {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .report-filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    input[type="date"] {
+      padding: 10px;
+      border: 2px solid #ced4da;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    input[type="date"]:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+      outline: none;
+    }
+
+    button {
+      padding: 12px 25px;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: #fff;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+      transform: scale(1.05);
+    }
+
+    button:active {
+      background-color: #004494;
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <div class="analytics-report">
+    <div class="dashboard-overview">
+      <div class="stat-card">
+        <h3>Temperature</h3>
+        <p id="total-questions">0</p>
+      </div>
+      <div class="stat-card">
+        <h3>Humidity</h3>
+        <p id="average-score">0</p>
+      </div>
+    </div>
+
+    <div class="charts-container">
+      <div class="chart-card">
+        <h4>Performance Metrics</h4>
+        <div class="chart-container">
+          <canvas id="performance-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h4>Score Distribution</h4>
+        <div class="chart-container">
+          <canvas id="score-distribution-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-generation">
+      <div class="report-filters">
+        <input type="date" id="start-date" />
+        <input type="date" id="end-date" />
+        <button id="generate-report">Generate Report</button>
+        <button id="download-report">Download Report</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Performance Chart
+    const ctxPerformance = document.getElementById('performance-chart').getContext('2d');
+    const performanceChart = new Chart(ctxPerformance, {
+      type: 'bar',
+      data: {
+        labels: ['Q1', 'Q2', 'Q3'],
+        datasets: [{
+          label: 'Question Usage',
+          data: [12, 19, 3],
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // Score Distribution Chart
+    const ctxScoreDistribution = document.getElementById('score-distribution-chart').getContext('2d');
+    const scoreDistributionChart = new Chart(ctxScoreDistribution, {
+      type: 'pie',
+      data: {
+        labels: ['0-50', '51-70', '71-90', '91-100'],
+        datasets: [{
+          label: 'Score Distribution',
+          data: [15, 25, 35, 25],
+          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#FF9F40']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+  </script>
+  <script>
+    function fetchData() {
+        // Call GET API to the server to fetch data
+        fetch('http://192.168.1.231:3000/data')
+        .then(response => response.json())
+        .then(data => {
+            console.log("Fetched data: ", data);
+            // Update the UI with the fetched data
+            document.getElementById('total-questions').innerText = `${data.mTem}`;
+            document.getElementById('average-score').innerText = `${data.mHum}`;
+        })
+        .catch(error => console.log('Error:', error));
+    }
+
+    setInterval(fetchData, 1000);
+  </script>
+</body>
+</html>
