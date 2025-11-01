@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Điều khiển LED thông minh (Node.js)</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; }
+        .container { max-width: 600px; margin: auto; padding: 25px; background: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        h1 { color: #333; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; transition: background-color 0.3s; }
+        #btnOn { background-color: #4CAF50; color: white; }
+        #btnOff { background-color: #f44336; color: white; }
+        #btnAuto { background-color: #2196F3; color: white; }
+        .control-panel { margin-top: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        #status-display { margin-top: 20px; font-size: 18px; font-weight: bold; padding: 10px; border-radius: 5px; }
+        .mode-manual { background-color: #ffeb3b; }
+        .mode-auto { background-color: #bbdefb; }
+        .led-on { color: green; }
+        .led-off { color: red; }
+        .sensor-data p { margin: 5px 0; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Điều khiển LED thông minh (Node.js)</h1>
+        
+        <div id="status-display" class="<%= mode === 'MANUAL' ? 'mode-manual' : 'mode-auto' %>">
+            Chế độ: <span id="current-mode"><%= mode %></span> | 
+            LED: <span id="current-led-state" class="<%= led_state === 'ON' ? 'led-on' : 'led-off' %>"><%= led_state %></span>
+        </div>
+
+        <h2>Dữ liệu Cảm biến ESP32</h2>
+        <div class="sensor-data">
+            <p>Nhiệt độ: <span id="temp-data"><%= sensor.temperature %></span> °C</p>
+            <p>Độ ẩm: <span id="hum-data"><%= sensor.humidity %></span> %</p>
+            <p>Ánh sáng (LDR): <span id="light-data"><%= sensor.light %></span> (0-4095)</p>
+        </div>
+
+        <div class="control-panel">
+            <h2>Chọn Chế độ Điều khiển</h2>
+            
+            <button id="btnAuto" onclick="setMode('AUTO')">Bật Chế độ Tự động (LDR)</button>
+            <p><i>Server sẽ tự động bật/tắt LED dựa trên cảm biến LDR.</i></p>
+
+            <hr>
+            
+            <button id="btnOn" onclick="setMode('MANUAL', 'ON')">BẬT LED Thủ công</button>
+            <button id="btnOff" onclick="setMode('MANUAL', 'OFF')">TẮT LED Thủ công</button>
+        </div>
+    </div>
+
+    <script>
+        const SERVER_URL = '/control'; 
+
+        // Hàm gửi lệnh điều khiển
+        async function setMode(mode, command = null) {
+            try {
+                const dataToSend = { mode: mode };
+                if (mode === 'MANUAL' && command) {
+                    dataToSend.command = command;
+                }
+
+                const response = await fetch(SERVER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToSend)
+                });
+
+                const result = await response.json();
+                console.log(result.message);
+                
+                if (result.status === 'success') {
+                    // Cập nhật chế độ hiển thị
+                    updateModeDisplay(mode);
+                    
+                    // Cập nhật trạng thái LED ngay nếu là lệnh MANUAL
+                    if (mode === 'MANUAL' && command) {
+                        updateLedStateDisplay(command);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error sending control command:', error);
+                alert('Có lỗi xảy ra khi gửi lệnh đến Server.');
+            }
+        }
+
+        // Cập nhật trạng thái LED trên giao diện
+        function updateLedStateDisplay(state) {
+            const ledStateEl = document.getElementById('current-led-state');
+            ledStateEl.textContent = state;
+            ledStateEl.className = state === 'ON' ? 'led-on' : 'led-off';
+        }
+
+        // Cập nhật chế độ trên giao diện
+        function updateModeDisplay(mode) {
+            document.getElementById('current-mode').textContent = mode;
+            const displayEl = document.getElementById('status-display');
+            displayEl.className = mode === 'MANUAL' ? 'mode-manual' : 'mode-auto';
+        }
+        
+        // Cập nhật dữ liệu cảm biến
+        function updateSensorDisplay(sensor) {
+            document.getElementById('temp-data').textContent = sensor.temperature.toFixed(1);
+            document.getElementById('hum-data').textContent = sensor.humidity.toFixed(1);
+            document.getElementById('light-data').textContent = sensor.light;
+        }
+
+        // Lấy trạng thái hiện tại từ Server
+        async function fetchState() {
+            try {
+                const response = await fetch(SERVER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'GET_STATE' }) 
+                });
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    updateModeDisplay(result.mode);
+                    updateLedStateDisplay(result.led_state);
+                    updateSensorDisplay(result.sensor);
+                }
+            } catch (error) {
+                // console.error('Error fetching state:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Thiết lập interval để cập nhật trạng thái từ Server mỗi 2 giây
+            setInterval(fetchState, 2000); 
+        });
+    </script>
+</body>
+</html>
