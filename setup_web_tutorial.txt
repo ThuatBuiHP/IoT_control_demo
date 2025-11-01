@@ -1,0 +1,8 @@
+RUN CMD 
+- composer global require laravel/installer
+
+- cp .env.example .env
+- setup .env file connect to mysql (xampp recommended)
+
+- php artisan migrate 
+- php artisan serve
