@@ -6,8 +6,8 @@
 #include <HTTPClient.h>
 
 // WiFi credentials
-const char* ssid = "OrsCorp";
-const char* password = "Tamchiduc68";
+const char* ssid = "Tien Thuat";
+const char* password = "07112004tien";
 const char* url = "http://192.168.1.231:3000/";
 
 // The data pin on the DHT sensor is connected to GPIO pin 4 on the ESP32
